@@ -1,0 +1,28 @@
+telegram-account-manager/
+├── config.py
+├── main.py
+├── requirements.txt
+├── .env
+├── database/
+│   ├── __init__.py
+│   ├── models.py
+│   └── mongodb.py
+├── handlers/
+│   ├── __init__.py
+│   ├── admin.py
+│   ├── user.py
+│   ├── login.py
+│   ├── send.py
+│   ├── join_leave.py
+│   ├── report.py
+│   └── otp.py
+├── utils/
+│   ├── __init__.py
+│   ├── helpers.py
+│   ├── session_manager.py
+│   └── validators.py
+├── keyboards/
+│   ├── __init__.py
+│   ├── admin_keyboard.py
+│   └── user_keyboard.py
+└── logs/
