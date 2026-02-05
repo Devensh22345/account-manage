@@ -9,15 +9,15 @@ from .mongodb import (
     get_admin_logs_collection,
     get_report_jobs_collection,
     get_config_collection,
-    Database
+    Database,
+    init_database
 )
 from .models import (
     Account,
     User,
     AdminLog,
     ReportJob,
-    BotConfig,
-    PyObjectId
+    BotConfig
 )
 
 __all__ = [
@@ -28,27 +28,13 @@ __all__ = [
     'get_report_jobs_collection',
     'get_config_collection',
     'Database',
+    'init_database',
     'Account',
     'User',
     'AdminLog',
     'ReportJob',
-    'BotConfig',
-    'PyObjectId'
+    'BotConfig'
 ]
 
 # Database connection instance
 db_instance = None
-
-async def init_database():
-    """Initialize database connection"""
-    global db_instance
-    from .mongodb import db_instance as db
-    db_instance = db
-    await db_instance.connect()
-    return db_instance
-
-async def close_database():
-    """Close database connection"""
-    global db_instance
-    if db_instance:
-        await db_instance.close()
