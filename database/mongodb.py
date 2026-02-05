@@ -2,6 +2,7 @@ import motor.motor_asyncio
 from config import Config
 from typing import Optional
 import logging
+from datetime import datetime  # ADD THIS IMPORT
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,7 @@ class Database:
     async def connect(self):
         """Connect to MongoDB"""
         try:
+            logger.info(f"🔌 Connecting to MongoDB: {self.config.MONGO_URI}")
             self.client = motor.motor_asyncio.AsyncIOMotorClient(self.config.MONGO_URI)
             self.db = self.client[self.config.DB_NAME]
             
@@ -38,7 +40,7 @@ class Database:
             
             # Accounts collection indexes
             await self.db.accounts.create_index("user_id")
-            await self.db.accounts.create_index("phone_number", unique=True)
+            await self.db.accounts.create_index("phone_number")
             await self.db.accounts.create_index([("user_id", 1), ("is_active", 1)])
             await self.db.accounts.create_index("is_active")
             await self.db.accounts.create_index("updated_at")
@@ -60,7 +62,9 @@ db_instance = Database()
 async def get_database():
     """Get database instance"""
     if not db_instance.client:
-        await db_instance.connect()
+        success = await db_instance.connect()
+        if not success:
+            raise ConnectionError("Failed to connect to MongoDB")
     return db_instance.db
 
 async def get_accounts_collection():
