@@ -17,6 +17,8 @@ class Account:
         **kwargs
     ) -> Dict[str, Any]:
         """Create account dictionary for MongoDB"""
+        now = datetime.utcnow()
+        
         return {
             "user_id": user_id,
             "phone_number": phone_number,
@@ -24,18 +26,19 @@ class Account:
             "api_hash": api_hash,
             "session_string": session_string,
             "account_name": account_name,
-            "first_name": kwargs.get("first_name"),
-            "last_name": kwargs.get("last_name"),
-            "username": kwargs.get("username"),
-            "bio": kwargs.get("bio"),
-            "profile_photo": kwargs.get("profile_photo"),
+            "first_name": kwargs.get("first_name", ""),
+            "last_name": kwargs.get("last_name", ""),
+            "username": kwargs.get("username", ""),
+            "telegram_id": kwargs.get("telegram_id", 0),
+            "bio": kwargs.get("bio", ""),
+            "profile_photo": kwargs.get("profile_photo", ""),
             "is_active": kwargs.get("is_active", True),
             "is_frozen": kwargs.get("is_frozen", False),
             "is_deleted": kwargs.get("is_deleted", False),
             "two_step_enabled": kwargs.get("two_step_enabled", False),
-            "last_seen": kwargs.get("last_seen"),
-            "created_at": kwargs.get("created_at", datetime.utcnow()),
-            "updated_at": kwargs.get("updated_at", datetime.utcnow())
+            "last_seen": kwargs.get("last_seen", now),
+            "created_at": kwargs.get("created_at", now),
+            "updated_at": kwargs.get("updated_at", now)
         }
 
 class User:
