@@ -12,17 +12,19 @@ def validate_phone_number(phone: str) -> Tuple[bool, Optional[str]]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    # Remove all non-digit characters
-    digits = re.sub(r'\D', '', phone)
+    # Remove all non-digit characters except +
+    if phone.startswith('+'):
+        digits = '+' + ''.join(filter(str.isdigit, phone[1:]))
+    else:
+        digits = ''.join(filter(str.isdigit, phone))
     
     # Check length
     if len(digits) < 10 or len(digits) > 15:
         return False, "Phone number must be 10-15 digits"
     
-    # Check for valid country code (optional)
-    if not phone.startswith('+'):
-        # Assume it's missing country code, we'll add +
-        phone = '+' + phone
+    # Check if it looks like a phone number
+    if not re.match(r'^\+?[0-9]{10,15}$', digits):
+        return False, "Invalid phone number format"
     
     return True, None
 
@@ -115,59 +117,6 @@ def validate_account_name(name: str) -> Tuple[bool, Optional[str]]:
     
     return True, None
 
-def validate_email(email: str) -> Tuple[bool, Optional[str]]:
-    """Validate email address"""
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    
-    if re.match(pattern, email):
-        return True, None
-    
-    return False, "Invalid email format"
-
-def validate_date_range(start_date: str, end_date: str) -> Tuple[bool, Optional[str]]:
-    """Validate date range"""
-    try:
-        start = datetime.strptime(start_date, '%Y-%m-%d')
-        end = datetime.strptime(end_date, '%Y-%m-%d')
-        
-        if start > end:
-            return False, "Start date cannot be after end date"
-        
-        if (end - start).days > 365:
-            return False, "Date range cannot exceed 1 year"
-        
-        return True, None
-        
-    except ValueError:
-        return False, "Invalid date format. Use YYYY-MM-DD"
-
-def validate_numeric_range(value: str, min_val: int = 1, max_val: int = 100) -> Tuple[bool, Optional[str]]:
-    """Validate numeric range"""
-    if not value.isdigit():
-        return False, "Value must be a number"
-    
-    num = int(value)
-    
-    if num < min_val:
-        return False, f"Value must be at least {min_val}"
-    
-    if num > max_val:
-        return False, f"Value must be at most {max_val}"
-    
-    return True, None
-
-def validate_file_extension(filename: str, allowed_extensions: list) -> Tuple[bool, Optional[str]]:
-    """Validate file extension"""
-    if not filename:
-        return False, "Filename cannot be empty"
-    
-    ext = filename.split('.')[-1].lower() if '.' in filename else ''
-    
-    if ext not in allowed_extensions:
-        return False, f"File type not allowed. Allowed: {', '.join(allowed_extensions)}"
-    
-    return True, None
-
 def sanitize_input(text: str, max_length: int = 500) -> str:
     """Sanitize user input"""
     if not text:
@@ -179,14 +128,5 @@ def sanitize_input(text: str, max_length: int = 500) -> str:
     # Truncate if too long
     if len(text) > max_length:
         text = text[:max_length] + "..."
-    
-    # Escape HTML special characters (for safe display)
-    text = (
-        text.replace('&', '&amp;')
-            .replace('<', '&lt;')
-            .replace('>', '&gt;')
-            .replace('"', '&quot;')
-            .replace("'", '&#39;')
-    )
     
     return text
