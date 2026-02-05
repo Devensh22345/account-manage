@@ -248,3 +248,29 @@ def sanitize_text(text: str, max_length: int = 200) -> str:
     )
     
     return text
+    
+import re
+
+def validate_api_credentials(api_id: str, api_hash: str) -> tuple[bool, str]:
+    """Validate API ID and Hash"""
+    if not api_id.isdigit():
+        return False, "API ID must be numeric"
+    
+    api_id_int = int(api_id)
+    if api_id_int < 10000 or api_id_int > 999999999:
+        return False, "API ID must be between 10000 and 999999999"
+    
+    if len(api_hash) != 32 or not re.match(r'^[a-f0-9]{32}$', api_hash, re.IGNORECASE):
+        return False, "API Hash must be 32 hexadecimal characters"
+    
+    return True, "Valid"
+
+def format_phone_number(phone: str) -> str:
+    """Format phone number to standard format"""
+    # Remove all non-digit characters except +
+    if phone.startswith('+'):
+        digits = '+' + ''.join(filter(str.isdigit, phone[1:]))
+    else:
+        digits = '+' + ''.join(filter(str.isdigit, phone))
+    
+    return digits
