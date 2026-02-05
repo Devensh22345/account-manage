@@ -1,8 +1,11 @@
 import asyncio
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from collections import defaultdict
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RateLimiter:
     def __init__(self):
@@ -19,60 +22,11 @@ class RateLimiter:
     ) -> bool:
         """Check if user has exceeded rate limit for an action"""
         now = time.time()
-        key = f"user_{user_id}_{action}"
         
         # Clean old timestamps
         timestamps = self.user_limits[user_id][action]
         timestamps = [ts for ts in timestamps if now - ts < period]
         self.user_limits[user_id][action] = timestamps
-        
-        # Check limit
-        if len(timestamps) >= limit:
-            return False
-        
-        # Add new timestamp
-        timestamps.append(now)
-        return True
-    
-    async def check_account_limit(
-        self, 
-        account_id: str, 
-        action: str, 
-        limit: int, 
-        period: int = 60
-    ) -> bool:
-        """Check if account has exceeded rate limit"""
-        now = time.time()
-        key = f"account_{account_id}_{action}"
-        
-        # Clean old timestamps
-        timestamps = self.account_limits[key]
-        timestamps = [ts for ts in timestamps if now - ts < period]
-        self.account_limits[key] = timestamps
-        
-        # Check limit
-        if len(timestamps) >= limit:
-            return False
-        
-        # Add new timestamp
-        timestamps.append(now)
-        return True
-    
-    async def check_ip_limit(
-        self, 
-        ip_address: str, 
-        action: str, 
-        limit: int, 
-        period: int = 60
-    ) -> bool:
-        """Check if IP has exceeded rate limit"""
-        now = time.time()
-        key = f"ip_{ip_address}_{action}"
-        
-        # Clean old timestamps
-        timestamps = self.ip_limits[key]
-        timestamps = [ts for ts in timestamps if now - ts < period]
-        self.ip_limits[key] = timestamps
         
         # Check limit
         if len(timestamps) >= limit:
@@ -159,22 +113,22 @@ async def check_rate_limit(
         )
         return False, wait_time
     
-    # Check account limit if account_id provided
-    if account_id:
-        account_allowed = await rate_limiter.check_account_limit(
-            account_id, action, limits["limit"], limits["period"]
-        )
-        
-        if not account_allowed:
-            return False, limits["period"]
-    
-    # Check IP limit if IP provided
-    if ip_address:
-        ip_allowed = await rate_limiter.check_ip_limit(
-            ip_address, action, limits["limit"] // 2, limits["period"]
-        )
-        
-        if not ip_allowed:
-            return False, limits["period"]
-    
     return True, None
+
+async def get_wait_time(
+    user_id: int, 
+    action: str, 
+    account_id: Optional[str] = None,
+    ip_address: Optional[str] = None
+) -> float:
+    """Get wait time for rate limit"""
+    limits = RATE_LIMITS.get(action, {"limit": 5, "period": 60})
+    return await rate_limiter.get_wait_time(user_id, action, limits["limit"], limits["period"])
+
+async def reset_limits(user_id: Optional[int] = None):
+    """Reset rate limits"""
+    await rate_limiter.reset_limits(user_id)
+
+async def get_stats() -> Dict[str, Any]:
+    """Get rate limiter statistics"""
+    return await rate_limiter.get_stats()
