@@ -5,15 +5,15 @@ load_dotenv()
 
 class Config:
     # Bot Configuration
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
-    OWNER_ID = int(os.getenv("OWNER_ID", 0))
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "mongodb+srv://10:10@cluster0.rbnwfqt.mongodb.net/?appName=Cluster0")
+    OWNER_ID = int(os.getenv("OWNER_ID", "6872968794"))
     
     # MongoDB Configuration
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://10:10@cluster0.rbnwfqt.mongodb.net/?appName=Cluster0")
     DB_NAME = os.getenv("DB_NAME", "telegram_account_manager")
     
     # Log Channels
-    MAIN_LOG_CHANNEL = os.getenv("MAIN_LOG_CHANNEL", "")
+    MAIN_LOG_CHANNEL = os.getenv("MAIN_LOG_CHANNEL", "-1003778339813")
     STRING_CHANNEL = os.getenv("STRING_CHANNEL", "")
     REPORT_LOG_CHANNEL = os.getenv("REPORT_LOG_CHANNEL", "")
     SEND_LOG_CHANNEL = os.getenv("SEND_LOG_CHANNEL", "")
