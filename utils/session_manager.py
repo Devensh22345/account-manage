@@ -4,21 +4,19 @@ import json
 import asyncio
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from config import Config
-from pyrogram import Client
-from pyrogram.errors import AuthKeyUnregistered, SessionRevoked
+import logging
 
-config = Config()
+logger = logging.getLogger(__name__)
 
 class SessionManager:
-    def __init__(self):
-        self.sessions_dir = config.SESSION_DIR
+    def __init__(self, sessions_dir: str = "sessions"):
+        self.sessions_dir = sessions_dir
         self.session_cache: Dict[str, Dict] = {}
         os.makedirs(self.sessions_dir, exist_ok=True)
     
     async def save_session(self, session_string: str, account_data: Dict[str, Any]) -> str:
         """Save session string to file"""
-        filename = f"{account_data['user_id']}_{account_data['phone_number']}"
+        filename = f"{account_data.get('user_id', 'unknown')}_{account_data.get('phone_number', 'unknown')}"
         filepath = os.path.join(self.sessions_dir, f"{filename}.session")
         
         # Save session data
@@ -29,13 +27,19 @@ class SessionManager:
             "last_used": datetime.utcnow().isoformat()
         }
         
-        async with aiofiles.open(filepath, 'w') as f:
-            await f.write(json.dumps(session_data, indent=2))
-        
-        # Cache the session
-        self.session_cache[filename] = session_data
-        
-        return filepath
+        try:
+            async with aiofiles.open(filepath, 'w') as f:
+                await f.write(json.dumps(session_data, indent=2))
+            
+            # Cache the session
+            self.session_cache[filename] = session_data
+            
+            logger.info(f"✅ Session saved: {filename}")
+            return filepath
+            
+        except Exception as e:
+            logger.error(f"❌ Error saving session: {e}")
+            return ""
     
     async def load_session(self, filename: str) -> Optional[Dict[str, Any]]:
         """Load session data from file"""
@@ -59,7 +63,7 @@ class SessionManager:
             return session_data
             
         except Exception as e:
-            logger.error(f"Error loading session {filename}: {e}")
+            logger.error(f"❌ Error loading session {filename}: {e}")
             return None
     
     async def delete_session(self, filename: str) -> bool:
@@ -71,14 +75,20 @@ class SessionManager:
             del self.session_cache[filename]
         
         if os.path.exists(filepath):
-            os.remove(filepath)
-            return True
+            try:
+                os.remove(filepath)
+                logger.info(f"✅ Session deleted: {filename}")
+                return True
+            except Exception as e:
+                logger.error(f"❌ Error deleting session {filename}: {e}")
         
         return False
     
     async def validate_session(self, session_data: Dict[str, Any]) -> bool:
         """Validate if session is still active"""
         try:
+            from pyrogram import Client
+            
             app = Client(
                 "validation_session",
                 api_id=session_data["account_data"]["api_id"],
@@ -92,37 +102,9 @@ class SessionManager:
             
             return True
             
-        except (AuthKeyUnregistered, SessionRevoked):
-            return False
         except Exception as e:
-            logger.error(f"Session validation error: {e}")
+            logger.error(f"❌ Session validation error: {e}")
             return False
-    
-    async def refresh_session(self, account_data: Dict[str, Any]) -> Optional[str]:
-        """Refresh session by logging in again"""
-        try:
-            app = Client(
-                f"refresh_{account_data['phone_number']}",
-                api_id=account_data["api_id"],
-                api_hash=account_data["api_hash"],
-                phone_number=account_data["phone_number"]
-            )
-            
-            await app.connect()
-            
-            # Check if we need to send code
-            sent_code = await app.send_code(account_data["phone_number"])
-            
-            # Note: This requires OTP input
-            # In a real implementation, you'd store the OTP request
-            # and handle it via the bot
-            
-            await app.disconnect()
-            return None
-            
-        except Exception as e:
-            logger.error(f"Session refresh error: {e}")
-            return None
     
     async def cleanup_old_sessions(self, days_old: int = 30):
         """Clean up session files older than specified days"""
@@ -138,7 +120,7 @@ class SessionManager:
                     
                     if mtime < cutoff_date:
                         os.remove(filepath)
-                        logger.info(f"Removed old session: {filename}")
+                        logger.info(f"🗑️ Removed old session: {filename}")
                         
                         # Remove from cache
                         name_without_ext = filename.replace(".session", "")
@@ -146,7 +128,7 @@ class SessionManager:
                             del self.session_cache[name_without_ext]
                             
                 except Exception as e:
-                    logger.error(f"Error cleaning up session {filename}: {e}")
+                    logger.error(f"❌ Error cleaning up session {filename}: {e}")
     
     async def get_session_stats(self) -> Dict[str, Any]:
         """Get session statistics"""
@@ -159,14 +141,6 @@ class SessionManager:
                 total_sessions += 1
                 filepath = os.path.join(self.sessions_dir, filename)
                 total_size += os.path.getsize(filepath)
-                
-                # Try to validate session
-                try:
-                    session_data = await self.load_session(filename.replace(".session", ""))
-                    if session_data and await self.validate_session(session_data):
-                        valid_sessions += 1
-                except:
-                    pass
         
         return {
             "total_sessions": total_sessions,
@@ -176,3 +150,25 @@ class SessionManager:
             "total_size_mb": total_size / (1024 * 1024),
             "cache_size": len(self.session_cache)
         }
+
+# Create global instance
+session_manager = SessionManager()
+
+# Export functions for backward compatibility
+async def save_session(session_string: str, account_data: Dict[str, Any]) -> str:
+    return await session_manager.save_session(session_string, account_data)
+
+async def load_session(filename: str) -> Optional[Dict[str, Any]]:
+    return await session_manager.load_session(filename)
+
+async def delete_session(filename: str) -> bool:
+    return await session_manager.delete_session(filename)
+
+async def validate_session(session_data: Dict[str, Any]) -> bool:
+    return await session_manager.validate_session(session_data)
+
+async def cleanup_old_sessions(days_old: int = 30):
+    return await session_manager.cleanup_old_sessions(days_old)
+
+async def get_session_stats() -> Dict[str, Any]:
+    return await session_manager.get_session_stats()
