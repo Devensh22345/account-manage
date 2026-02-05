@@ -5,7 +5,7 @@ load_dotenv()
 
 class Config:
     # Bot Configuration
-    BOT_TOKEN = os.getenv("BOT_TOKEN", "mongodb+srv://10:10@cluster0.rbnwfqt.mongodb.net/?appName=Cluster0")
+    BOT_TOKEN = os.getenv("BOT_TOKEN", "8212386488:AAFFJm55JruEPc5lRP0MijbYe_nXz4eFSh4")
     OWNER_ID = int(os.getenv("OWNER_ID", "6872968794"))
     
     # MongoDB Configuration
